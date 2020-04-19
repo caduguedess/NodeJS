@@ -1,107 +1,127 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>JavaScript Adicionando arquivo GeoJSON ao mapa</title>
-        <link rel="stylesheet" href="leaflet\leaflet.css" />
-        <script src="leaflet\leaflet.js"></script>
-        <style>
-            html, body {
-                height: 100%;
-                margin: 0;
-            }
-            #map {
-                width: 100%;
-                height: 100%;
-            }
-            .info {
-            padding: 6px 8px;
-            font: 14px/16px Arial, Helvetica, sans-serif;
-            background: rgba(255,255,255,0.8);
-            box-shadow: 0 0 15px rgba(0,0,0,0.2);
-            border-radius: 5px;
-            width: 10em;
-            }
-            .info h4 {
-                margin: 0 0 5px;
-                color: #777;
-            }
-            .info #currentTown {
-                margin: 6px 0;
-            }
-        </style>
-    </head>
-    <body>
-        <div id='map'></div>
+<head>
+    <title>Linked view</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="leaflet\leaflet.css" />
+    <script src="leaflet\leaflet.js"></script>
+    <style>
+        #map { 
+            width: 80%;
+            height: 100%;
+            float: left;
+        }
+        #townslist {
+            height: 100%;
+            overflow-y: scroll;
+            margin: 0px;
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        .highlight {
+            background-color: cyan;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <ul id="townslist"></ul>
+    <script>
 
+let map = L.map("map").setView([-22, -43], 8);
 
+L.tileLayer("https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_nolabels/{z}/{x}/{y}.png", {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attribution/">CartoDB</a>',
+    subdomains: "abcd",
+    maxZoom: 19
+}).addTo(map);
 
-        <script>
-                let geojson;
-                var map = L.map("map", {center: [-22, -43], zoom: 8});
-                L.tileLayer(
-                    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", 
-                    {attribution: '&copy; <a href="http://' + 
-                    'www.openstreetmap.org/copyright">OpenStreetMap</a>'}
-                ).addTo(map);
+// List HTML
+let html = " ";
 
-                let info = L.control({position: "topright"});
-                info.onAdd = function(map) {
-                    let div = L.DomUtil.create("div", "info");
-                    div.innerHTML = '<h4>Casos COVID-19</h4><p id="currentTown"></p>';
-                    return div;
-                };
-                info.addTo(map);
+// GeoJSON layer
+let geojson;
 
-                function style(feature) {
-                return {
-                    fillColor: "gray",
-                    weight: 0.5,
-                    opacity: 1,
-                    color: "black",
-                    fillOpacity: 0.7
-                };
-                }
+// Load GeoJSON
+fetch("data/coronavirus.geojson")
+    .then(function(response) {
+        return response.json();
+    })
+    .then(function(data) {
 
-                function highlightFeature(e) {
-                let currentLayer = e.target;
-                currentLayer.setStyle(highlightStyle);
-                currentLayer.bringToFront();
-                document.getElementById("currentTown").innerHTML =
-                    currentLayer.feature.properties.NOME + "<br>" + 
-                    currentLayer.feature.properties.CASOS + " people";
-                }
-
-                function resetHighlight(e) {
-                    let currentLayer = e.target;
-                    geojson.resetStyle(currentLayer);
-                    document.getElementById("currentTown").innerHTML = "";
-                }
-
-                let highlightStyle = {
-                weight: 5,
-                color: "yellow",
-                fillOpacity: 0.5
-                };
-
-     
-                fetch("data/coronavirus.geojson")
-                    .then(function(response) {
-                        return response.json();
-                    })
-                    .then(function(data) {
-                        geojson = L.geoJSON(data, {
-                            style: style,
-                            onEachFeature: function(feature, layer) {
-                                layer
-                                    .on("mouseover", highlightFeature)
-                                    .on("mouseout", resetHighlight)
-                            }
-                        }).addTo(map);
-                    });
-                                
-
-        </script>
-
+        // Load GeoJSON on map & construct list HTML code
+        geojson = L.geoJSON(data, {style: normalStyle, onEachFeature: onEachFeature}).addTo(map);
         
-    </body>
+        // Intert list HTML
+        document.getElementById("townslist").innerHTML = html;
+        
+        // Bind event listeners to list items
+        let el = document.querySelectorAll("#townslist li");
+        for(let i = 0; i < el.length; i++) {
+            el[i].addEventListener("mouseover", function(e) {
+                let hovered_item = e.target;
+                let hovered_id = hovered_item.id;
+                hovered_item.classList.add("highlight");
+                geojson.getLayer(hovered_id).bringToFront().setStyle(highlightStyle);
+            });
+            el[i].addEventListener("mouseout", function(e) {
+                let hovered_item = e.target;
+                let hovered_id = hovered_item.id;
+                geojson.resetStyle(geojson.getLayer(hovered_id));
+                hovered_item.classList.remove("highlight");
+            });
+        }
+
+    });
+
+// Highlighted polygon style
+let highlightStyle = {
+    weight: 5,
+    color: "#666",
+    dashArray: "",
+    fillOpacity: 0.7
+};
+
+// Normal polygon style
+let normalStyle = {
+    fillColor: "red",
+    weight: 1,
+    opacity: 1,
+    color: "gray",
+    fillOpacity: 0.25
+};
+
+// Function applied on each polygon load
+function onEachFeature(feature, layer) {
+    let NOME = feature.properties.NOME;
+    let CASOS = feature.properties.CASOS;
+    html += '<li id="' + NOME + '">' + CASOS + '</li>';
+    layer._leaflet_id = NOME;
+    layer
+        .addEventListener("mouseover", function(e) {
+            let hovered_feature = e.target;
+            hovered_feature.setStyle(highlightStyle);
+            hovered_feature.bringToFront();
+            let el = document.getElementById(hovered_feature._leaflet_id);
+            el.scrollIntoView({
+                behavior: "auto",
+                block: "center",
+                inline: "center"
+            });
+            el.classList.add("highlight");
+        })
+        .addEventListener("mouseout", function(e) {
+            let hovered_feature = e.target;
+            geojson.resetStyle(hovered_feature);
+            let el = document.getElementById(hovered_feature._leaflet_id);
+            el.classList.remove("highlight");
+        });
+}
+
+    </script>
+</body>
 </html>
