@@ -55,8 +55,7 @@ fetch("data/coronavirus.geojson")
 
         // Load GeoJSON on map & construct list HTML code
         geojson = L.geoJSON(data, {style: normalStyle, onEachFeature: onEachFeature}).addTo(map);
-        
-        // Intert list HTML
+                // Intert list HTML
         document.getElementById("townslist").innerHTML = html;
         
         // Bind event listeners to list items
