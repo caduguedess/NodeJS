@@ -1,35 +1,104 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>JavaScript Objeto para HTML</title>
+        <title>JavaScript Adicionando arquivo GeoJSON ao mapa</title>
+        <link rel="stylesheet" href="leaflet\leaflet.css" />
+        <script src="leaflet\leaflet.js"></script>
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+            }
+            #map {
+                width: 100%;
+                height: 100%;
+            }
+            .info {
+            padding: 6px 8px;
+            font: 14px/16px Arial, Helvetica, sans-serif;
+            background: rgba(255,255,255,0.8);
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            border-radius: 5px;
+            width: 10em;
+            }
+            .info h4 {
+                margin: 0 0 5px;
+                color: #777;
+            }
+            .info #currentTown {
+                margin: 6px 0;
+            }
+        </style>
     </head>
     <body>
-        <p>Esse codigo transforma dados de entrada javascritp de array para HTML </p>
+        <div id='map'></div>
 
-        <p>Lista de especies raras em Israel:</p>
-        <ul id="species"></ul>
+
 
         <script>
-            let data = [
-                "Iris atrofusca",
-                "Iris atropurpurea",
-                "Iris bismarckiana",
-                "Iris haynei",
-                "Iris hermona",
-                "Iris lortetii",
-                "Iris mariae",
-                "Iris petrana"
-            ];
-            
-            let html = "";
+                let geojson;
+                var map = L.map("map", {center: [-22, -43], zoom: 8});
+                L.tileLayer(
+                    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", 
+                    {attribution: '&copy; <a href="http://' + 
+                    'www.openstreetmap.org/copyright">OpenStreetMap</a>'}
+                ).addTo(map);
 
-            data.forEach(function(element) {
-            html += "<li><i>" + element + "</i></li>";
-            });
+                let info = L.control({position: "topright"});
+                info.onAdd = function(map) {
+                    let div = L.DomUtil.create("div", "info");
+                    div.innerHTML = '<h4>Casos COVID-19</h4><p id="currentTown"></p>';
+                    return div;
+                };
+                info.addTo(map);
 
-            document.getElementById("species").innerHTML = html;
+                function style(feature) {
+                return {
+                    fillColor: "gray",
+                    weight: 0.5,
+                    opacity: 1,
+                    color: "black",
+                    fillOpacity: 0.7
+                };
+                }
 
+                function highlightFeature(e) {
+                let currentLayer = e.target;
+                currentLayer.setStyle(highlightStyle);
+                currentLayer.bringToFront();
+                document.getElementById("currentTown").innerHTML =
+                    currentLayer.feature.properties.NOME + "<br>" + 
+                    currentLayer.feature.properties.CASOS + " people";
+                }
 
+                function resetHighlight(e) {
+                    let currentLayer = e.target;
+                    geojson.resetStyle(currentLayer);
+                    document.getElementById("currentTown").innerHTML = "";
+                }
+
+                let highlightStyle = {
+                weight: 5,
+                color: "yellow",
+                fillOpacity: 0.5
+                };
+
+     
+                fetch("data/coronavirus.geojson")
+                    .then(function(response) {
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        geojson = L.geoJSON(data, {
+                            style: style,
+                            onEachFeature: function(feature, layer) {
+                                layer
+                                    .on("mouseover", highlightFeature)
+                                    .on("mouseout", resetHighlight)
+                            }
+                        }).addTo(map);
+                    });
+                                
 
         </script>
 
