@@ -63,16 +63,12 @@ fetch("data/coronavirus.geojson")
         for(let i = 0; i < el.length; i++) {
             el[i].addEventListener("mouseover", function(e) {
                 let hovered_item = e.target;
+                geojson.resetStyle(geojson.getLayer(hovered_id));
                 let hovered_id = hovered_item.id;
                 hovered_item.classList.add("highlight");
                 geojson.getLayer(hovered_id).bringToFront().setStyle(highlightStyle);
             });
-            el[i].addEventListener("mouseout", function(e) {
-                let hovered_item = e.target;
-                let hovered_id = hovered_item.id;
-                geojson.resetStyle(geojson.getLayer(hovered_id));
-                hovered_item.classList.remove("highlight");
-            });
+
         }
 
     });
