@@ -102,8 +102,9 @@ function onEachFeature(feature, layer) {
     html += '<li id="' + NOME + '">' + CASOS + '</li>';
     layer._leaflet_id = NOME;
     layer
-        .addEventListener("mouseover", function(e) {
+        .addEventListener("click", function(e) {
             let hovered_feature = e.target;
+            geojson.resetStyle(hovered_feature);
             hovered_feature.setStyle(highlightStyle);
             hovered_feature.bringToFront();
             let el = document.getElementById(hovered_feature._leaflet_id);
@@ -114,12 +115,7 @@ function onEachFeature(feature, layer) {
             });
             el.classList.add("highlight");
         })
-        .addEventListener("mouseout", function(e) {
-            let hovered_feature = e.target;
-            geojson.resetStyle(hovered_feature);
-            let el = document.getElementById(hovered_feature._leaflet_id);
-            el.classList.remove("highlight");
-        });
+
 }
 
     </script>
