@@ -72,8 +72,7 @@
                 currentLayer.setStyle(highlightStyle);
                 currentLayer.bringToFront();
                 document.getElementById("currentTown").innerHTML =
-                    currentLayer.feature.properties.LEVEL_4_NA + "<br>" + 
-                    currentLayer.feature.properties.ID + " people";
+                currentLayer.feature.properties.LEVEL_4_NA + "<br>";
                 document.getElementById("myImg").src = "data/" + currentLayer.feature.properties.ID + ".jpg";
 
                 }
